@@ -18,6 +18,7 @@ class ZhilianPipeline(object):
 
     def process_item(self, item, spider):
         data = {
+            'from_website': item['from_website'],
             'min_salary': item['min_salary'],
             'max_salary': item['max_salary'],
             'location': item['job_area'],

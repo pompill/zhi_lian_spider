@@ -179,6 +179,7 @@ class ZhiLianSpider(Spider):
             #     jobarea = joba[0] + re.findall(r'</a>-(.*?)</strong></li>',str(response.body))
             # else:
             #     jobarea = j
+            item['from_website'] = '智联'
             item['job_area'] = jobarea
             item['date'] = date
             item['job_people'] = job_people
