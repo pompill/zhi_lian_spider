@@ -1,20 +1,25 @@
 # -*- coding:utf-8 -*-
-from scrapy.spiders import Spider
-import scrapy
-from zhilian.items import ZhiLianItem
-from lxml import etree
+
+# Python内置库
 import re
-import redis
-from urllib import parse
 import time
-from zhilian import changeK
+from urllib import parse
+
+# 第三方库
+import scrapy
+from scrapy.spiders import Spider
+from lxml import etree
+import redis
+
+# 项目内部库
+from zhilian.zhilian.utils import utils
+from zhilian.zhilian.items import ZhiLianItem
 
 
 class ZhiLianSpider(Spider):
     name = "zhi_lian"
     r = redis.Redis(host='localhost', port=6379, db=0)
     key = parse.quote("大数据")
-    # start_urls = ['http://sou.zhaopin.com/jobs/searchresult.ashx?bj=4010200&sj=2153&in=210500&jl=%E5%B9%BF%E5%B7%9E&p=1&isadv=0']
     url = "http://sou.zhaopin.com/jobs/searchresult.ashx?jl={}&kw={}&p={}&isadv=0"
 
     def start_requests(self):
@@ -60,38 +65,92 @@ class ZhiLianSpider(Spider):
         wenben = []
         if selector.xpath('//div[@class="terminalpage-left"]'):
             # 获取招聘信息主要内容
-            money = selector.xpath('//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[1]/strong/text()')[0].replace("元/月","").split("-")
-            d = selector.xpath('//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[3]/strong/span/text()|//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[3]/strong/span/text()')[0]
-            jobpeople = selector.xpath('//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[4]/strong/text()')[0]
-            jingyan = selector.xpath('//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[5]/strong/text()')[0]
-            xueli = selector.xpath('//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[6]/strong/text()')[0]
-            jobnum = selector.xpath('//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[7]/strong/text()')[0]
-            leibie = selector.xpath('//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[8]/strong/a/text()')[0]
-            jobplace = selector.xpath('//div[@class="terminalpage-left"]/ul[@class="terminal-ul clearfix"]/li[2]/strong/a/text()')
-            command = selector.xpath('string(//div[@class="tab-inner-cont"])').strip()
+            money = selector.xpath(
+                '//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[1]/strong/text()')[0].replace("元/月", "").split("-")
+            d = selector.xpath(
+                '//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[3]/strong/span/text()|'
+                '//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[3]/strong/span/text()')[0]
+            job_people = selector.xpath(
+                '//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[4]/strong/text()')[0]
+            jin_yan = selector.xpath(
+                '//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[5]/strong/text()')[0]
+            xue_li = selector.xpath(
+                '//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[6]/strong/text()')[0]
+            job_num = selector.xpath(
+                '//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[7]/strong/text()')[0]
+            lei_bie = selector.xpath(
+                '//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[8]/strong/a/text()')[0]
+            jobplace = selector.xpath(
+                'string(//div[@class="terminalpage-left"]'
+                '/ul[@class="terminal-ul clearfix"]'
+                '/li[2]/strong/a)')
+            command = selector.xpath(
+                'string(//div[@class="tab-inner-cont"])').strip().replace('查看工作地图', '')
             wenben.append(command)
             h = re.sub('\r\n\s+', '', wenben[0])
             if re.findall('岗位职责(.*?)岗位要求', str(h)):
                 try:
-                    whattodo = re.findall('岗位职责(.*?)岗位要求', str(h))[0].replace(':','').replace('：','')
-                    whatcommand = re.findall('岗位要求(.*?)工作地址', str(h))[0].replace(':','').replace('：','')
+                    what_todo = re.findall(
+                        '岗位职责(.*?)岗位要求',
+                        str(h))[0].replace(
+                        ':',
+                        '').replace(
+                        '：',
+                        '')
+                    what_command = re.findall(
+                        '岗位要求(.*?)工作地址',
+                        str(h))[0].replace(
+                        ':',
+                        '').replace(
+                        '：',
+                        '')
                     work_duty_content = ''
-                except:
-                    whattodo = ''
-                    whatcommand = ''
+                except Exception as err:
+                    print(err)
+                    what_todo = ''
+                    what_command = ''
                     work_duty_content = h[0:500]
             elif re.findall('岗位职责(.*?)任职', str(h)):
                 try:
-                    whattodo = re.findall('岗位职责(.*?)任职', str(h))[0].replace(':','').replace('：','')
-                    whatcommand = re.findall('要求(.*?)工作地址', str(h))[0].replace(':','').replace('：','')
+                    what_todo = re.findall(
+                        '岗位职责(.*?)任职',
+                        str(h))[0].replace(
+                        ':',
+                        '').replace(
+                        '：',
+                        '')
+                    what_command = re.findall(
+                        '要求(.*?)工作地址',
+                        str(h))[0].replace(
+                        ':',
+                        '').replace(
+                        '：',
+                        '')
                     work_duty_content = ''
-                except:
-                    whattodo = ''
-                    whatcommand = ''
+                except Exception as err:
+                    print(err)
+                    what_todo = ''
+                    what_command = ''
                     work_duty_content = h[0:500]
             else:
-                whattodo = ''
-                whatcommand = ''
+                what_todo = ''
+                what_command = ''
                 work_duty_content = h[0:500]
                 pass
             if re.findall('工作地址：(\w+)', str(h)):
@@ -99,17 +158,18 @@ class ZhiLianSpider(Spider):
             else:
                 totalplace = ''
             if totalplace[0] != '':
-                jobarea = jobplace[0] + totalplace[0]
+                jobarea = jobplace + '-' + totalplace[0]
             else:
-                jobarea = jobplace[0]
+                jobarea = jobplace
             try:
                 floatdate = time.mktime(time.strptime(d, '%Y-%m-%d %H:%M:%S'))*1000
-                date = re.findall('(\d+)+\.',str(floatdate))[0]
-            except:
+                date = re.findall('(\d+)+\.', str(floatdate))[0]
+            except Exception as err:
+                print(err)
                 date = '最近or招聘中'
             if len(money) == 2:
-                min_salary = changeK.change_to_k(int(money[0]))
-                max_salary = changeK.change_to_k(int(money[1]))
+                min_salary = utils.change_to_k(int(money[0]))
+                max_salary = utils.change_to_k(int(money[1]))
                 item['min_salary'] = min_salary
                 item['max_salary'] = max_salary
             else:
@@ -119,78 +179,103 @@ class ZhiLianSpider(Spider):
             #     jobarea = joba[0] + re.findall(r'</a>-(.*?)</strong></li>',str(response.body))
             # else:
             #     jobarea = j
-            item['job_area'] = jobarea[:-6]
+            item['job_area'] = jobarea
             item['date'] = date
-            item['job_people'] = jobpeople
-            item['jin_yan'] = jingyan
-            item['xue_li'] = xueli
-            item['job_num'] = jobnum
-            item['lei_bie'] = leibie
-            item['what_todo'] = whattodo
-            item['what_command'] = whatcommand
+            item['job_people'] = job_people
+            item['jin_yan'] = jin_yan
+            item['xue_li'] = xue_li
+            item['job_num'] = job_num
+            item['lei_bie'] = lei_bie
+            item['what_todo'] = what_todo
+            item['what_command'] = what_command
             item['work_duty_content'] = work_duty_content
             item['work_info_url'] = url
-            companyurl = selector.xpath('//div[@class="fixed-inner-box"]/div[1]/h2/a/@href')[0]
-            print(companyurl)
-            yield scrapy.Request(companyurl, callback=self.get_company_info, headers={'referer':companyurl}, meta={'item': item, 'front_html': selector})
+            company_url = selector.xpath('//div[@class="fixed-inner-box"]/div[1]/h2/a/@href')[0]
+            print(company_url)
+            yield scrapy.Request(company_url,
+                                 callback=self.get_company_info,
+                                 headers={'referer': company_url},
+                                 meta={'item': item, 'front_html': selector})
 
-    def get_company_info(self, response):
+    @staticmethod
+    def get_company_info(response):
         selector = etree.HTML(response.body)
         item = response.meta['item']
         if selector.xpath('//div[@class="mainLeft"]'):
-            companyname = selector.xpath('//div[@class="mainLeft"]/div[1]/h1/text()')[0].strip()
-            compyxingzhi = selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[1]/td[2]/span/text()')[0]
-            compynum = selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[2]/td[2]/span/text()')[0]
-            compyintroduce = selector.xpath('string(//div[@class="company-content"])').strip()
+            company_name = selector.xpath(
+                '//div[@class="mainLeft"]'
+                '/div[1]/h1/text()')[0].strip()
+            company_xin_zhi = selector.xpath(
+                '//div[@class="mainLeft"]'
+                '/div[1]/table/tr[1]/td[2]/span/text()')[0]
+            company_num = selector.xpath(
+                '//div[@class="mainLeft"]'
+                '/div[1]/table/tr[2]/td[2]/span/text()')[0]
+            company_introduce = selector.xpath(
+                'string(//div[@class="company-content"])').strip()
             if selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[3]/td[2]/span/a'):
-                compyurl = selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[3]/td[2]/span/a/@href')[0]
-                whatwork = selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[4]/td[2]/span/text()')[0]
+                company_url = selector.xpath(
+                    '//div[@class="mainLeft"]'
+                    '/div[1]/table/tr[3]/td[2]/span/a/@href')[0]
+                what_work = selector.xpath(
+                    '//div[@class="mainLeft"]'
+                    '/div[1]/table/tr[4]/td[2]/span/text()')[0]
                 try:
-                    compyplace = selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[5]/td[2]/span/text()')[0]
-                except:
-                    compyplace = ''
+                    company_location = selector.xpath(
+                        '//div[@class="mainLeft"]'
+                        '/div[1]/table/tr[5]/td[2]/span/text()')[0]
+                except Exception as err:
+                    print(err)
+                    company_location = ''
             else:
-                compyurl = ''
-                whatwork = selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[3]/td[2]/span/text()')[0]
+                company_url = ''
+                what_work = selector.xpath(
+                    '//div[@class="mainLeft"]'
+                    '/div[1]/table/tr[3]/td[2]/span/text()')[0]
                 try:
-                    compyplace = selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[4]/td[2]/span/text()')[0]
-                except:
-                    compyplace = ''
-            item['company_url'] = compyurl
-            item['what_work'] = whatwork
-            item['company_place'] = compyplace
-            item['company_name'] = companyname
-            item['company_xin_zhi'] = compyxingzhi
-            item['company_num'] = compynum
-            item['company_introduce'] = compyintroduce
+                    company_location = selector.xpath(
+                        '//div[@class="mainLeft"]'
+                        '/div[1]/table/tr[4]/td[2]/span/text()')[0]
+                except Exception as err:
+                    print(err)
+                    company_location = ''
+            item['company_url'] = company_url
+            item['what_work'] = what_work
+            item['company_place'] = company_location
+            item['company_name'] = company_name
+            item['company_xin_zhi'] = company_xin_zhi
+            item['company_num'] = company_num
+            item['company_introduce'] = company_introduce
             print(item)
             yield item
         else:
             front_html = response.meta['front_html']
             c_info = []
-            if front_html.xpath('string(//ul[@class="terminal-ul clearfix terminal-company mt20"])'):
-                all = front_html.xpath('string(//ul[@class="terminal-ul clearfix terminal-company mt20"])').strip()
-                c_info.append(all)
+            if front_html.xpath(
+                    'string(//ul[@class="terminal-ul clearfix terminal-company mt20"])'):
+                front_html = front_html.xpath(
+                    'string(//ul[@class="terminal-ul clearfix terminal-company mt20"])').strip()
+                c_info.append(front_html)
                 a = re.sub('\r\n\s+', '', c_info[0]).replace('/', '')
                 h = re.sub('\s+', '', a)
-                companyname = front_html.xpath('string(//p[@class="company-name-t"]/a)')
-                compyxingzhi = re.findall('公司性质：(\w+)公司', str(h))[0]
-                compynum = re.findall('公司规模：(.*?)公司', str(h))[0]
-                whatwork = re.findall('公司行业：(\w+)公司', str(h))[0]
-                compyplace = re.findall('公司地址：(\w+)', str(h))[0]
-                print(compyxingzhi, companyname, compynum, compyplace, whatwork)
+                company_name = front_html.xpath('string(//p[@class="company-name-t"]/a)')
+                company_xin_zhi = re.findall('公司性质：(\w+)公司', str(h))[0]
+                company_num = re.findall('公司规模：(.*?)公司', str(h))[0]
+                what_work = re.findall('公司行业：(\w+)公司', str(h))[0]
+                company_place = re.findall('公司地址：(\w+)', str(h))[0]
                 try:
-                    compyurl = re.findall('公司主页：(.*?)公司', str(h))[0]
-                    item['company_url'] = compyurl
-                except:
+                    company_url = re.findall('公司主页：(.*?)公司', str(h))[0]
+                    item['company_url'] = company_url
+                except Exception as err:
+                    print(err)
                     item['company_url'] = ""
                     pass
-                compyintroduce = ""
-                item['company_name'] = companyname
-                item['company_xin_zhi'] = compyxingzhi
-                item['company_num'] = compynum
-                item['what_work'] = whatwork
-                item['company_place'] = compyplace
-                item['company_introduce'] = compyintroduce
+                company_introduce = ""
+                item['company_name'] = company_name
+                item['company_xin_zhi'] = company_xin_zhi
+                item['company_num'] = company_num
+                item['what_work'] = what_work
+                item['company_place'] = company_place
+                item['company_introduce'] = company_introduce
                 print(item)
                 yield item

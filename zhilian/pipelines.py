@@ -7,6 +7,7 @@
 import pymongo
 from scrapy.conf import settings
 
+
 class ZhilianPipeline(object):
     def open_spider(self, spider):
         self.client = pymongo.MongoClient(host=settings['MONGO_HOST'], port=settings['MONGO_PORT'])
