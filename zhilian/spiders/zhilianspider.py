@@ -23,7 +23,8 @@ class ZhiLianSpider(Spider):
 
     def start_requests(self):
         area_data = select_data.parse()
-        for a in area_data:
+        for i in area_data:
+            a = i['area']
             area = parse.quote(a)
             start_urls = self.url.format(area, self.key, 1)
             yield scrapy.Request(url=start_urls, callback=self.parse, meta={'area': area})
