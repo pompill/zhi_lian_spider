@@ -9,22 +9,22 @@ from urllib import parse
 import scrapy
 from scrapy.spiders import Spider
 from lxml import etree
-import redis
 
 # 项目内部库
-from zhilian.zhilian.utils import utils
-from zhilian.zhilian.items import ZhiLianItem
+from zhilian.utils import utils
+from zhilian.items import ZhiLianItem
+from zhilian.utils import select_data
 
 
 class ZhiLianSpider(Spider):
     name = "zhi_lian"
-    r = redis.Redis(host='localhost', port=6379, db=0)
     key = parse.quote("大数据")
     url = "http://sou.zhaopin.com/jobs/searchresult.ashx?jl={}&kw={}&p={}&isadv=0"
 
     def start_requests(self):
-        while True:
-            area = parse.quote(self.r.spop('area'))
+        area_data = select_data.parse()
+        for a in area_data:
+            area = parse.quote(a)
             start_urls = self.url.format(area, self.key, 1)
             yield scrapy.Request(url=start_urls, callback=self.parse, meta={'area': area})
 
@@ -278,5 +278,4 @@ class ZhiLianSpider(Spider):
                 item['what_work'] = what_work
                 item['company_place'] = company_place
                 item['company_introduce'] = company_introduce
-                print(item)
                 yield item

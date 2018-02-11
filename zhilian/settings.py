@@ -19,10 +19,10 @@ DEFAULT_REQUEST_HEADERS = {
 SPIDER_MODULES = ['zhilian.spiders']
 NEWSPIDER_MODULE = 'zhilian.spiders'
 
-MONGO_HOST = "120.79.162.44"  # 主机IP
-MONGO_PORT = 10086  # 端口号
-MONGO_DB = "fwwb"  # 库名
-MONGO_COLL = "zhilianData"  # collection名
+MONGO_HOST = "120.79.162.44"
+MONGO_PORT = 10086
+MONGO_DB = "fwwb"
+MONGO_COLL = "zhilianData"
 MONGO_USER = "Leo"
 MONGO_PSW = "fwwb123456"
 
