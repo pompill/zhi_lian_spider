@@ -176,20 +176,16 @@ class ZhiLianSpider(Spider):
             else:
                 item['min_salary'] = money[0]
                 item['max_salary'] = money[0]
-            # oba[0]if re.findall(r'</a>"-(.*?)</strong></li>',str(response.body)):
-            #     jobarea = joba[0] + re.findall(r'</a>-(.*?)</strong></li>',str(response.body))
-            # else:
-            #     jobarea = j
             item['from_website'] = '智联'
-            item['job_area'] = jobarea
-            item['date'] = date
-            item['job_people'] = job_people
-            item['jin_yan'] = jin_yan
-            item['xue_li'] = xue_li
-            item['job_num'] = job_num
-            item['lei_bie'] = lei_bie
-            item['what_todo'] = what_todo
-            item['what_command'] = what_command
+            item['location'] = jobarea
+            item['publish_date'] = date
+            item['work_type'] = job_people
+            item['work_experience'] = jin_yan
+            item['limit_degree'] = xue_li
+            item['people_count'] = job_num
+            item['career_type'] = lei_bie
+            item['work_duty'] = what_todo
+            item['work_need'] = what_command
             item['work_duty_content'] = work_duty_content
             item['work_info_url'] = url
             company_url = selector.xpath('//div[@class="fixed-inner-box"]/div[1]/h2/a/@href')[0]
@@ -241,13 +237,13 @@ class ZhiLianSpider(Spider):
                 except Exception as err:
                     print(err)
                     company_location = ''
-            item['company_url'] = company_url
-            item['what_work'] = what_work
-            item['company_place'] = company_location
-            item['company_name'] = company_name
-            item['company_xin_zhi'] = company_xin_zhi
-            item['company_num'] = company_num
-            item['company_introduce'] = company_introduce
+            item['business_website'] = company_url
+            item['business_industry'] = what_work
+            item['business_location'] = company_location
+            item['business_name'] = company_name
+            item['business_type'] = company_xin_zhi
+            item['business_count'] = company_num
+            item['business_info'] = company_introduce
             print(item)
             yield item
         else:
@@ -267,16 +263,16 @@ class ZhiLianSpider(Spider):
                 company_place = re.findall('公司地址：(\w+)', str(h))[0]
                 try:
                     company_url = re.findall('公司主页：(.*?)公司', str(h))[0]
-                    item['company_url'] = company_url
+                    item['business_website'] = company_url
                 except Exception as err:
                     print(err)
-                    item['company_url'] = ""
+                    item['business_website'] = ""
                     pass
                 company_introduce = ""
-                item['company_name'] = company_name
-                item['company_xin_zhi'] = company_xin_zhi
-                item['company_num'] = company_num
-                item['what_work'] = what_work
-                item['company_place'] = company_place
-                item['company_introduce'] = company_introduce
+                item['business_name'] = company_name
+                item['business_type'] = company_xin_zhi
+                item['business_count'] = company_num
+                item['business_industry'] = what_work
+                item['business_location'] = company_place
+                item['business_info'] = company_introduce
                 yield item
