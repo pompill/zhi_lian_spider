@@ -9,6 +9,7 @@ from urllib import parse
 import scrapy
 from scrapy.spiders import Spider
 from lxml import etree
+import hashlib
 
 # 项目内部库
 from zhilian.utils import utils
@@ -18,16 +19,20 @@ from zhilian.utils import select_data
 
 class ZhiLianSpider(Spider):
     name = "zhi_lian"
-    key = parse.quote("大数据")
+    jname = "大数据"
+    key = parse.quote(jname)
     url = "http://sou.zhaopin.com/jobs/searchresult.ashx?jl={}&kw={}&p={}&isadv=0"
 
     def start_requests(self):
         area_data = select_data.parse()
+        time1 = time.time()*1000
         for i in area_data:
             a = i['area']
             area = parse.quote(a)
             start_urls = self.url.format(area, self.key, 1)
             yield scrapy.Request(url=start_urls, callback=self.parse, meta={'area': area})
+        time2 = time.time()*1000
+        print('爬取智联招聘{}行业所花时间为{}'.format(self.jname, int(time2-time1)))
 
     def parse(self, response):
         page_num = self.get_page_num(response)
@@ -155,16 +160,15 @@ class ZhiLianSpider(Spider):
                 work_duty_content = h[0:500]
                 pass
             if re.findall('工作地址：(\w+)', str(h)):
-                totalplace = re.findall('工作地址：(\w+)', str(h))
+                totalplace = re.findall('工作地址：(\w+)', str(h))[0]
             else:
                 totalplace = ''
-            if totalplace[0] != '':
+            if totalplace != '':
                 jobarea = jobplace + '-' + totalplace[0]
             else:
                 jobarea = jobplace
             try:
-                floatdate = time.mktime(time.strptime(d, '%Y-%m-%d %H:%M:%S'))*1000
-                date = re.findall('(\d+)+\.', str(floatdate))[0]
+                date = int(time.mktime(time.strptime(d, '%Y-%m-%d %H:%M:%S'))*1000)
             except Exception as err:
                 print(err)
                 date = '最近or招聘中'
@@ -193,7 +197,7 @@ class ZhiLianSpider(Spider):
             yield scrapy.Request(company_url,
                                  callback=self.get_company_info,
                                  headers={'referer': company_url},
-                                 meta={'item': item, 'front_html': selector})
+                                 meta={'item': item, 'front_html': selector, 'career_type': lei_bie, 'url': url})
 
     @staticmethod
     def get_company_info(response):
@@ -206,9 +210,6 @@ class ZhiLianSpider(Spider):
             company_xin_zhi = selector.xpath(
                 '//div[@class="mainLeft"]'
                 '/div[1]/table/tr[1]/td[2]/span/text()')[0]
-            company_num = selector.xpath(
-                '//div[@class="mainLeft"]'
-                '/div[1]/table/tr[2]/td[2]/span/text()')[0]
             company_introduce = selector.xpath(
                 'string(//div[@class="company-content"])').strip()
             if selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[3]/td[2]/span/a'):
@@ -237,6 +238,12 @@ class ZhiLianSpider(Spider):
                 except Exception as err:
                     print(err)
                     company_location = ''
+            if selector.xpath('//div[@class="mainLeft"]/div[1]/table/tr[2]/td[2]/span/text()'):
+                company_num = selector.xpath(
+                    '//div[@class="mainLeft"]'
+                    '/div[1]/table/tr[2]/td[2]/span/text()')[0]
+            else:
+                company_num = ''
             item['business_website'] = company_url
             item['business_industry'] = what_work
             item['business_location'] = company_location
@@ -244,21 +251,21 @@ class ZhiLianSpider(Spider):
             item['business_type'] = company_xin_zhi
             item['business_count'] = company_num
             item['business_info'] = company_introduce
-            print(item)
+            string = response.meta['career_type'] + company_name
+            item['_id'] = hashlib.md5(string.encode('utf-8')).hexdigest()
             yield item
         else:
             front_html = response.meta['front_html']
             c_info = []
             if front_html.xpath(
                     'string(//ul[@class="terminal-ul clearfix terminal-company mt20"])'):
-                front_html = front_html.xpath(
+                c_box_info = front_html.xpath(
                     'string(//ul[@class="terminal-ul clearfix terminal-company mt20"])').strip()
-                c_info.append(front_html)
+                c_info.append(c_box_info)
                 a = re.sub('\r\n\s+', '', c_info[0]).replace('/', '')
                 h = re.sub('\s+', '', a)
-                company_name = front_html.xpath('string(//p[@class="company-name-t"]/a)')
+                company_name = front_html.xpath('//p[@class="company-name-t"]/a/text()')[0]
                 company_xin_zhi = re.findall('公司性质：(\w+)公司', str(h))[0]
-                company_num = re.findall('公司规模：(.*?)公司', str(h))[0]
                 what_work = re.findall('公司行业：(\w+)公司', str(h))[0]
                 company_place = re.findall('公司地址：(\w+)', str(h))[0]
                 try:
@@ -268,6 +275,10 @@ class ZhiLianSpider(Spider):
                     print(err)
                     item['business_website'] = ""
                     pass
+                if re.findall('公司规模：(.*?)公司', str(h)):
+                    company_num = re.findall('公司规模：(.*?)公司', str(h))[0]
+                else:
+                    company_num = ''
                 company_introduce = ""
                 item['business_name'] = company_name
                 item['business_type'] = company_xin_zhi
@@ -275,4 +286,6 @@ class ZhiLianSpider(Spider):
                 item['business_industry'] = what_work
                 item['business_location'] = company_place
                 item['business_info'] = company_introduce
+                string = response.meta['career_type'] + company_name
+                item['_id'] = hashlib.md5(string.encode('utf-8')).hexdigest()
                 yield item
