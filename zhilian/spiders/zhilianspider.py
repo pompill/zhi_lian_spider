@@ -25,14 +25,11 @@ class ZhiLianSpider(Spider):
 
     def start_requests(self):
         area_data = select_data.parse()
-        time1 = time.time()*1000
         for i in area_data:
             a = i['area']
             area = parse.quote(a)
             start_urls = self.url.format(area, self.key, 1)
             yield scrapy.Request(url=start_urls, callback=self.parse, meta={'area': area})
-        time2 = time.time()*1000
-        print('爬取智联招聘{}行业所花时间为{}'.format(self.jname, int(time2-time1)))
 
     def parse(self, response):
         page_num = self.get_page_num(response)
