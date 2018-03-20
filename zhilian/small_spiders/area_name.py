@@ -1,8 +1,8 @@
 import urllib.request as ur
 from bs4 import BeautifulSoup as bs
 import pymongo
-client = pymongo.MongoClient(host='120.79.162.44', port=10086)
-client.admin.authenticate("Leo", "fwwb123456")
+client = pymongo.MongoClient(host='localhost', port=27017)
+client.admin.authenticate("", "")
 zhilian = client["fwwb"]
 zhilian_area = zhilian["zhilian_area"]
 
